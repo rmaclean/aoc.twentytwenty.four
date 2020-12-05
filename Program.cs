@@ -10,11 +10,8 @@ var passports = fileRecords
     .Split('\n')
     .Where(line => !string.IsNullOrWhiteSpace(line))
     .Select(recordText => new Passport(recordText))
+    .Where(passport => passport.Valid())
     .ToList();
 
-foreach (var passport in passports)
-{
-    Console.WriteLine($"{passport.Valid()} = {passport}");
-}
 
-Console.WriteLine($"Valid Passports {passports.Where(passport => passport.Valid()).Count()}");
+Console.WriteLine($"Valid Passports {passports.Count()}");

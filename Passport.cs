@@ -5,33 +5,38 @@ using System.Text.RegularExpressions;
 
 internal record Passport
 {
-
-    [Rule("(byr:)(?<year>\\d{4})", typeof(int))]
+    [Rule("(byr:)(?<year>\\d{4})(\\s|\\r?\\n|$)", typeof(int))]
     public int? BirthYear { get; private set; }
 
-    [Rule("(iyr:)(?<year>\\d{4})", typeof(int))]
+    [Rule("(iyr:)(?<year>\\d{4})(\\s|\\r?\\n|$)", typeof(int))]
     public int? IssueYear { get; private set; }
 
-    [Rule("(eyr:)(?<year>\\d{4})", typeof(int))]
+    [Rule("(eyr:)(?<year>\\d{4})(\\s|\\r?\\n|$)", typeof(int))]
     public int? ExpirationYear { get; private set; }
 
-    [Rule("(hgt:)(?<height>\\d+)", typeof(int))]
+    [Rule("(hgt:)(?<height>\\d{2,3})(cm|in)(\\s|\\r?\\n|$)", typeof(int))]
     public int? Height { get; private set; }
 
-    [Rule("(hcl:)(?<hex>\\S+)", typeof(string))]
+    [Rule("(hgt:)(\\d{2,3})(?<uom>(cm|in))(\\s|\\r?\\n|$)", typeof(string))]
+    public string UOM { get; private set; }
+
+    [Rule("(hcl:)(?<color>#[0-9a-f]{6})(\\s|\\r?\\n|$)", typeof(string))]
     public string HairColor { get; private set; }
 
-    [Rule("(ecl:)(?<color>\\S+)", typeof(string))]
+    [Rule("(ecl:)(?<color>(amb|blu|brn|gry|grn|hzl|oth))(\\s|\\r?\\n|$)", typeof(string))]
     public string EyeColor { get; private set; }
 
-    [Rule("(pid:)(?<code>\\S+)", typeof(string))]
+    [Rule("(pid:)(?<code>\\d{9})(\\s|\\r?\\n|$)", typeof(string))]
     public string PassportID { get; private set; }
 
-    [Rule("(cid:)(?<code>\\d{2,3})", typeof(int), required: false)]
+    [Rule("(cid:)(?<code>\\S+)", typeof(int), required: false)]
     public int? CountryID { get; private set; }
+
+    public string Raw { get; }
 
     public Passport(string record)
     {
+        Raw = record;
         foreach (var prop in typeof(Passport).GetProperties())
         {
             var ruleAttr = prop.GetCustomAttributes(false).Where(attr => attr.GetType() == typeof(RuleAttribute)).FirstOrDefault();
@@ -61,6 +66,17 @@ internal record Passport
                 }
             }
         }
+
+        if (
+            BirthYear < 1920 || BirthYear > 2002 ||
+            IssueYear < 2010 || IssueYear > 2020 ||
+            ExpirationYear < 2020 || ExpirationYear > 2030 ||
+            (UOM == "cm" && (Height  < 150 || Height > 193)) ||
+            (UOM == "in" && (Height  < 59 || Height > 76))
+        ) {
+            return false;
+        }
+
 
         return true;
     }
